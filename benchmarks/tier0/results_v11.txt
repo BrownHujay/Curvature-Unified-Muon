@@ -1,0 +1,40 @@
+============================================================
+CUM v6-v9: Consolidated New Ideas Benchmark
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1434 (1s)
+  [Muon] step 500: val_loss=1.7830 (158s)
+  [Muon] step 1000: val_loss=1.5710 (341s)
+  [Muon] step 1500: val_loss=1.5256 (506s)
+  [Muon] step 1999: val_loss=1.5110 (680s)
+  Muon                     : val_loss=1.5190  time=679.8s
+
+--- v5 best ---
+  [v5 best] step 0: val_loss=4.1434 (2s)
+  [v5 best] step 500: val_loss=1.7872 (179s)
+  [v5 best] step 1000: val_loss=1.5634 (348s)
+  [v5 best] step 1500: val_loss=1.5175 (511s)
+  [v5 best] step 1999: val_loss=1.5024 (683s)
+  v5 best                  : val_loss=1.5077  time=682.7s
+
+--- v11 graft=0.3 ---
+  [v11 graft=0.3] step 0: val_loss=4.1434 (2s)
+  [v11 graft=0.3] step 500: val_loss=1.7858 (185s)
+  [v11 graft=0.3] step 1000: val_loss=1.5678 (378s)
+  [v11 graft=0.3] step 1500: val_loss=1.5206 (574s)
+  [v11 graft=0.3] step 1999: val_loss=1.5057 (766s)
+  v11 graft=0.3            : val_loss=1.5126  time=765.9s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5190 (vs Muon: +0.0000, vs v5: +0.0113)
+  v5 best                  : val=1.5077 (vs Muon: -0.0113, vs v5: +0.0000)
+  v11 graft=0.3            : val=1.5126 (vs Muon: -0.0064, vs v5: +0.0049)
+
+BEST NEW: v11 graft=0.3
+  vs Muon: -0.0064
+  vs v5:   --0.0049
+============================================================

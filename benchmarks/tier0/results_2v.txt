@@ -1,0 +1,47 @@
+============================================================
+CUM v6-v9: Consolidated New Ideas Benchmark
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (7s)
+  [Muon] step 500: val_loss=1.7833 (132s)
+  [Muon] step 1000: val_loss=1.5505 (266s)
+  [Muon] step 1500: val_loss=1.5302 (388s)
+  [Muon] step 1999: val_loss=1.5189 (516s)
+  Muon                     : val_loss=1.5205  time=516.3s
+
+--- v5 best ---
+  [v5 best] step 0: val_loss=4.1440 (3s)
+  [v5 best] step 500: val_loss=1.7878 (147s)
+  [v5 best] step 1000: val_loss=1.5500 (298s)
+  [v5 best] step 1500: val_loss=1.5173 (435s)
+  [v5 best] step 1999: val_loss=1.5145 (567s)
+  v5 best                  : val_loss=1.5127  time=567.4s
+
+--- 2v1 topk+NS ---
+  [2v1 topk+NS] step 0: val_loss=4.1434 (3s)
+  [2v1 topk+NS] step 500: val_loss=1.8080 (133s)
+  [2v1 topk+NS] step 1000: val_loss=1.5879 (229s)
+  [2v1 topk+NS] step 1500: val_loss=1.5338 (318s)
+  [2v1 topk+NS] step 1999: val_loss=1.5558 (406s)
+  2v1 topk+NS              : val_loss=1.5296  time=406.4s
+
+--- 2v2 QR pure ---
+Traceback (most recent call last):
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 284, in <module>
+    main()
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 254, in main
+    val_loss, elapsed = run_one(
+                        ^^^^^^^^
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 107, in run_one
+    main_opt.step()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/torch/optim/optimizer.py", line 487, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/../../cum/cum_2v2.py", line 128, in step
+    p.add_(orth, alpha=-lr * scale)
+RuntimeError: The size of tensor a (384) must match the size of tensor b (128) at non-singleton dimension 0

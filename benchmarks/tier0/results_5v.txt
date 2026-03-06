@@ -1,0 +1,49 @@
+============================================================
+CUM Series 5: Novel Math (Lie Algebra, Soft Equalization)
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (4s)
+  [Muon] step 500: val_loss=1.7790 (118s)
+  [Muon] step 1000: val_loss=1.5546 (244s)
+  [Muon] step 1500: val_loss=1.5281 (368s)
+  [Muon] step 1999: val_loss=1.5125 (500s)
+  Muon                     : val_loss=1.5169  time=500.2s
+
+--- 5v1 LieAlg+NS ---
+  [5v1 LieAlg+NS] step 0: val_loss=4.1440 (3s)
+  [5v1 LieAlg+NS] step 500: val_loss=4.1912 (146s)
+  [5v1 LieAlg+NS] step 1000: val_loss=4.0511 (283s)
+  [5v1 LieAlg+NS] step 1500: val_loss=3.4408 (406s)
+  [5v1 LieAlg+NS] step 1999: val_loss=3.2366 (524s)
+  5v1 LieAlg+NS            : val_loss=3.2463  time=524.2s
+
+--- 5v2 SoftEQ b=3 ---
+  [5v2 SoftEQ b=3] step 0: val_loss=4.1440 (3s)
+  [5v2 SoftEQ b=3] step 500: val_loss=2.2808 (138s)
+  [5v2 SoftEQ b=3] step 1000: val_loss=1.8460 (271s)
+  [5v2 SoftEQ b=3] step 1500: val_loss=1.6711 (402s)
+  [5v2 SoftEQ b=3] step 1999: val_loss=1.6386 (542s)
+  5v2 SoftEQ b=3           : val_loss=1.6375  time=542.2s
+
+--- 5v2 SoftEQ b=7 ---
+  [5v2 SoftEQ b=7] step 0: val_loss=4.1440 (4s)
+  [5v2 SoftEQ b=7] step 500: val_loss=2.1209 (381s)
+  [5v2 SoftEQ b=7] step 1000: val_loss=1.7546 (529s)
+  [5v2 SoftEQ b=7] step 1500: val_loss=1.6137 (762s)
+  [5v2 SoftEQ b=7] step 1999: val_loss=1.5849 (1121s)
+  5v2 SoftEQ b=7           : val_loss=1.5875  time=1120.7s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5169 (vs Muon: +0.0000, vs v5: -1.7294)
+  5v1 LieAlg+NS            : val=3.2463 (vs Muon: +1.7294, vs v5: +0.0000)
+  5v2 SoftEQ b=3           : val=1.6375 (vs Muon: +0.1206, vs v5: -1.6088)
+  5v2 SoftEQ b=7           : val=1.5875 (vs Muon: +0.0705, vs v5: -1.6589)
+
+BEST NEW: 5v2 SoftEQ b=7
+  vs Muon: --0.0705
+  vs v5:   -1.6589
+============================================================

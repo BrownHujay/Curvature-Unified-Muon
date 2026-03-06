@@ -1,0 +1,44 @@
+============================================================
+CUM Series 5d: SVD-based v5 Replication + Custom SV Curves
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (4s)
+  [Muon] step 500: val_loss=1.7802 (118s)
+  [Muon] step 1000: val_loss=1.5515 (238s)
+  [Muon] step 1500: val_loss=1.5310 (366s)
+  [Muon] step 1999: val_loss=1.5257 (498s)
+  Muon                     : val_loss=1.5237  time=497.7s
+
+--- v5 save@2 b=0.15 ---
+  [v5 save@2 b=0.15] step 0: val_loss=4.1440 (3s)
+  [v5 save@2 b=0.15] step 500: val_loss=1.7896 (137s)
+  [v5 save@2 b=0.15] step 1000: val_loss=1.5453 (271s)
+  [v5 save@2 b=0.15] step 1500: val_loss=1.5253 (455s)
+  [v5 save@2 b=0.15] step 1999: val_loss=1.5095 (602s)
+  v5 save@2 b=0.15         : val_loss=1.5134  time=601.8s
+
+--- 5v6 SVD ns_blend ---
+  [5v6 SVD ns_blend] step 0: val_loss=4.1440 (3s)
+  [5v6 SVD ns_blend] step 500: val_loss=1.7926 (157s)
+  [5v6 SVD ns_blend] step 1000: val_loss=1.5426 (322s)
+  [5v6 SVD ns_blend] step 1500: val_loss=1.5178 (476s)
+Traceback (most recent call last):
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 371, in <module>
+    main()
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 341, in main
+    val_loss, elapsed = run_one(
+                        ^^^^^^^^
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/test_cum_v6_v9.py", line 119, in run_one
+    main_opt.step()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/torch/optim/optimizer.py", line 487, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kotnewm/Documents/GitHub/Curvature-Unified-Muon/benchmarks/tier0/../../cum/cum_5v6.py", line 108, in step
+    U, S, Vh = torch.linalg.svd(u, full_matrices=False)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch._C._LinAlgError: linalg.svd: The algorithm failed to converge because the input matrix is ill-conditioned or has too many repeated singular values (error code: 1).

@@ -1,0 +1,49 @@
+============================================================
+CUM Series 5: Schatten-p Steepest Descent
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (26s)
+  [Muon] step 500: val_loss=1.7819 (253s)
+  [Muon] step 1000: val_loss=1.5478 (388s)
+  [Muon] step 1500: val_loss=1.5273 (509s)
+  [Muon] step 1999: val_loss=1.5118 (654s)
+  Muon                     : val_loss=1.5150  time=654.4s
+
+--- 5v3 Schatten p=8 ---
+  [5v3 Schatten p=8] step 0: val_loss=4.1440 (3s)
+  [5v3 Schatten p=8] step 500: val_loss=1.7891 (170s)
+  [5v3 Schatten p=8] step 1000: val_loss=1.5532 (344s)
+  [5v3 Schatten p=8] step 1500: val_loss=1.5323 (514s)
+  [5v3 Schatten p=8] step 1999: val_loss=1.5207 (648s)
+  5v3 Schatten p=8         : val_loss=1.5202  time=647.6s
+
+--- 5v3 Schatten p=32 ---
+  [5v3 Schatten p=32] step 0: val_loss=4.1440 (2s)
+  [5v3 Schatten p=32] step 500: val_loss=1.7740 (131s)
+  [5v3 Schatten p=32] step 1000: val_loss=1.5602 (268s)
+  [5v3 Schatten p=32] step 1500: val_loss=1.5410 (407s)
+  [5v3 Schatten p=32] step 1999: val_loss=1.5343 (548s)
+  5v3 Schatten p=32        : val_loss=1.5308  time=547.7s
+
+--- 5v4 Adaptive p ---
+  [5v4 Adaptive p] step 0: val_loss=4.1440 (3s)
+  [5v4 Adaptive p] step 500: val_loss=1.7821 (151s)
+  [5v4 Adaptive p] step 1000: val_loss=1.5622 (289s)
+  [5v4 Adaptive p] step 1500: val_loss=1.5444 (430s)
+  [5v4 Adaptive p] step 1999: val_loss=1.5246 (571s)
+  5v4 Adaptive p           : val_loss=1.5309  time=571.1s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5150 (vs Muon: +0.0000, vs v5: -0.0051)
+  5v3 Schatten p=8         : val=1.5202 (vs Muon: +0.0051, vs v5: +0.0000)
+  5v3 Schatten p=32        : val=1.5308 (vs Muon: +0.0157, vs v5: +0.0106)
+  5v4 Adaptive p           : val=1.5309 (vs Muon: +0.0159, vs v5: +0.0108)
+
+BEST NEW: 5v3 Schatten p=32
+  vs Muon: --0.0157
+  vs v5:   --0.0106
+============================================================

@@ -1,0 +1,49 @@
+============================================================
+CUM Series 5c: SVD-NS Diagnostic + Schatten-p Sweep
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (4s)
+  [Muon] step 500: val_loss=1.7843 (123s)
+  [Muon] step 1000: val_loss=1.5488 (239s)
+  [Muon] step 1500: val_loss=1.5292 (354s)
+  [Muon] step 1999: val_loss=1.5162 (472s)
+  Muon                     : val_loss=1.5181  time=472.3s
+
+--- 5v5 SVD+NS poly ---
+  [5v5 SVD+NS poly] step 0: val_loss=4.1440 (2s)
+  [5v5 SVD+NS poly] step 500: val_loss=1.7825 (131s)
+  [5v5 SVD+NS poly] step 1000: val_loss=1.5516 (255s)
+  [5v5 SVD+NS poly] step 1500: val_loss=1.5317 (377s)
+  [5v5 SVD+NS poly] step 1999: val_loss=1.5186 (503s)
+  5v5 SVD+NS poly          : val_loss=1.5198  time=502.7s
+
+--- 5v3 Schatten p=6 ---
+  [5v3 Schatten p=6] step 0: val_loss=4.1440 (2s)
+  [5v3 Schatten p=6] step 500: val_loss=1.8091 (213s)
+  [5v3 Schatten p=6] step 1000: val_loss=1.5646 (899s)
+  [5v3 Schatten p=6] step 1500: val_loss=1.5327 (1028s)
+  [5v3 Schatten p=6] step 1999: val_loss=1.5190 (1158s)
+  5v3 Schatten p=6         : val_loss=1.5218  time=1157.6s
+
+--- 5v3 Schatten p=12 ---
+  [5v3 Schatten p=12] step 0: val_loss=4.1440 (2s)
+  [5v3 Schatten p=12] step 500: val_loss=1.7852 (128s)
+  [5v3 Schatten p=12] step 1000: val_loss=1.5598 (258s)
+  [5v3 Schatten p=12] step 1500: val_loss=1.5390 (390s)
+  [5v3 Schatten p=12] step 1999: val_loss=1.5245 (523s)
+  5v3 Schatten p=12        : val_loss=1.5252  time=523.0s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5181 (vs Muon: +0.0000, vs v5: -0.0017)
+  5v5 SVD+NS poly          : val=1.5198 (vs Muon: +0.0017, vs v5: +0.0000)
+  5v3 Schatten p=6         : val=1.5218 (vs Muon: +0.0037, vs v5: +0.0020)
+  5v3 Schatten p=12        : val=1.5252 (vs Muon: +0.0072, vs v5: +0.0055)
+
+BEST NEW: 5v3 Schatten p=6
+  vs Muon: --0.0037
+  vs v5:   --0.0020
+============================================================

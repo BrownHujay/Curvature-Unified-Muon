@@ -1,0 +1,40 @@
+============================================================
+CUM Series 4: No-NS Algorithms (Shampoo, SODA)
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (4s)
+  [Muon] step 500: val_loss=1.7857 (125s)
+  [Muon] step 1000: val_loss=1.5434 (274s)
+  [Muon] step 1500: val_loss=1.5257 (437s)
+  [Muon] step 1999: val_loss=1.5103 (585s)
+  Muon                     : val_loss=1.5133  time=584.6s
+
+--- 4v2 SODA k=4 ---
+  [4v2 SODA k=4] step 0: val_loss=4.1428 (2s)
+  [4v2 SODA k=4] step 500: val_loss=2.5688 (133s)
+  [4v2 SODA k=4] step 1000: val_loss=2.4717 (266s)
+  [4v2 SODA k=4] step 1500: val_loss=2.3976 (421s)
+  [4v2 SODA k=4] step 1999: val_loss=2.3364 (590s)
+  4v2 SODA k=4             : val_loss=2.3401  time=589.6s
+
+--- 4v3 WGASU k=8 ---
+  [4v3 WGASU k=8] step 0: val_loss=4.1450 (3s)
+  [4v3 WGASU k=8] step 500: val_loss=2.5316 (138s)
+  [4v3 WGASU k=8] step 1000: val_loss=2.4605 (276s)
+  [4v3 WGASU k=8] step 1500: val_loss=2.3898 (379s)
+  [4v3 WGASU k=8] step 1999: val_loss=2.3197 (487s)
+  4v3 WGASU k=8            : val_loss=2.3246  time=487.4s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5133 (vs Muon: +0.0000, vs v5: -0.8268)
+  4v2 SODA k=4             : val=2.3401 (vs Muon: +0.8268, vs v5: +0.0000)
+  4v3 WGASU k=8            : val=2.3246 (vs Muon: +0.8112, vs v5: -0.0156)
+
+BEST NEW: 4v3 WGASU k=8
+  vs Muon: --0.8112
+  vs v5:   -0.0156
+============================================================

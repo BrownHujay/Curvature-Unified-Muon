@@ -1,0 +1,49 @@
+============================================================
+CUM Series 5e: SVD Blend Parameter Optimization
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1440 (4s)
+  [Muon] step 500: val_loss=1.7820 (121s)
+  [Muon] step 1000: val_loss=1.5513 (239s)
+  [Muon] step 1500: val_loss=1.5299 (361s)
+  [Muon] step 1999: val_loss=1.5198 (499s)
+  Muon                     : val_loss=1.5215  time=499.2s
+
+--- 5v6 s2 b=0.15 ---
+  [5v6 s2 b=0.15] step 0: val_loss=4.1440 (3s)
+  [5v6 s2 b=0.15] step 500: val_loss=1.7906 (155s)
+  [5v6 s2 b=0.15] step 1000: val_loss=1.5412 (307s)
+  [5v6 s2 b=0.15] step 1500: val_loss=1.5227 (471s)
+  [5v6 s2 b=0.15] step 1999: val_loss=1.5077 (625s)
+  5v6 s2 b=0.15            : val_loss=1.5055  time=625.3s
+
+--- 5v6 s2 b=0.25 ---
+  [5v6 s2 b=0.25] step 0: val_loss=4.1440 (3s)
+  [5v6 s2 b=0.25] step 500: val_loss=1.8107 (160s)
+  [5v6 s2 b=0.25] step 1000: val_loss=1.5523 (318s)
+  [5v6 s2 b=0.25] step 1500: val_loss=1.5147 (473s)
+  [5v6 s2 b=0.25] step 1999: val_loss=1.4983 (624s)
+  5v6 s2 b=0.25            : val_loss=1.5048  time=623.8s
+
+--- 5v6 s1 b=0.15 ---
+  [5v6 s1 b=0.15] step 0: val_loss=4.1440 (5s)
+  [5v6 s1 b=0.15] step 500: val_loss=1.8048 (167s)
+  [5v6 s1 b=0.15] step 1000: val_loss=1.5542 (308s)
+  [5v6 s1 b=0.15] step 1500: val_loss=1.5251 (451s)
+  [5v6 s1 b=0.15] step 1999: val_loss=1.5080 (597s)
+  5v6 s1 b=0.15            : val_loss=1.5099  time=597.3s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5215 (vs Muon: +0.0000, vs v5: +0.0161)
+  5v6 s2 b=0.15            : val=1.5055 (vs Muon: -0.0161, vs v5: +0.0000)
+  5v6 s2 b=0.25            : val=1.5048 (vs Muon: -0.0167, vs v5: -0.0007)
+  5v6 s1 b=0.15            : val=1.5099 (vs Muon: -0.0116, vs v5: +0.0045)
+
+BEST NEW: 5v6 s2 b=0.25
+  vs Muon: -0.0167
+  vs v5:   -0.0007
+============================================================

@@ -1,0 +1,13 @@
+optimizer,lr,final_acc,steps_to_target
+SGD+Nesterov,0.05,0.9701,2000
+SGD+Nesterov,0.1,0.972,2000
+SGD+Nesterov,0.5,0.098,2000
+AdamW,0.001,0.9758,1500
+AdamW,0.003,0.9804,1000
+AdamW,0.01,0.9812,1100
+Muon,0.01,0.9846,400
+Muon,0.02,0.9849,400
+Muon,0.05,0.9817,1200
+CUM,0.01,0.9822,500
+CUM,0.02,0.9835,500
+CUM,0.05,0.9824,400

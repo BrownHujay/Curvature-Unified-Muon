@@ -1,0 +1,24 @@
+============================================================
+CUM v6-v9: Consolidated New Ideas Benchmark
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1434 (1s)
+  [Muon] step 500: val_loss=1.7830 (145s)
+  [Muon] step 1000: val_loss=1.5710 (294s)
+  [Muon] step 1500: val_loss=1.5256 (453s)
+  [Muon] step 1999: val_loss=1.5110 (626s)
+  Muon                     : val_loss=1.5190  time=625.9s
+
+--- v5 best ---
+  [v5 best] step 0: val_loss=4.1434 (2s)
+  [v5 best] step 500: val_loss=1.7872 (180s)
+  [v5 best] step 1000: val_loss=1.5634 (334s)
+  [v5 best] step 1500: val_loss=1.5175 (494s)
+  [v5 best] step 1999: val_loss=1.5024 (701s)
+  v5 best                  : val_loss=1.5077  time=700.8s
+
+--- v10 damp+blend ---
+  [v10 damp+blend] step 0: val_loss=4.1434 (2s)
+  [v10 damp+blend] step 500: val_loss=1.8391 (529s)

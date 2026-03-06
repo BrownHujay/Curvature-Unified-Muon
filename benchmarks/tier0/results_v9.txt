@@ -1,0 +1,40 @@
+============================================================
+CUM v6-v9: Consolidated New Ideas Benchmark
+============================================================
+Dataset: 1,115,394 chars, vocab=65
+
+--- Muon ---
+  [Muon] step 0: val_loss=4.1434 (1s)
+  [Muon] step 500: val_loss=1.7830 (152s)
+  [Muon] step 1000: val_loss=1.5710 (312s)
+  [Muon] step 1500: val_loss=1.5256 (472s)
+  [Muon] step 1999: val_loss=1.5110 (631s)
+  Muon                     : val_loss=1.5190  time=631.4s
+
+--- v5 best ---
+  [v5 best] step 0: val_loss=4.1434 (2s)
+  [v5 best] step 500: val_loss=1.7872 (164s)
+  [v5 best] step 1000: val_loss=1.5634 (325s)
+  [v5 best] step 1500: val_loss=1.5175 (500s)
+  [v5 best] step 1999: val_loss=1.5024 (668s)
+  v5 best                  : val_loss=1.5077  time=668.0s
+
+--- v9 damp=0.3 ---
+  [v9 damp=0.3] step 0: val_loss=4.1434 (2s)
+  [v9 damp=0.3] step 500: val_loss=1.7989 (179s)
+  [v9 damp=0.3] step 1000: val_loss=1.5616 (372s)
+  [v9 damp=0.3] step 1500: val_loss=1.5183 (561s)
+  [v9 damp=0.3] step 1999: val_loss=1.4980 (742s)
+  v9 damp=0.3              : val_loss=1.5101  time=741.8s
+
+============================================================
+RESULTS SUMMARY
+============================================================
+  Muon                     : val=1.5190 (vs Muon: +0.0000, vs v5: +0.0113)
+  v5 best                  : val=1.5077 (vs Muon: -0.0113, vs v5: +0.0000)
+  v9 damp=0.3              : val=1.5101 (vs Muon: -0.0089, vs v5: +0.0024)
+
+BEST NEW: v9 damp=0.3
+  vs Muon: -0.0089
+  vs v5:   --0.0024
+============================================================

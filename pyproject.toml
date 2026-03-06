@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "cum-optimizer"
+version = "0.1.0"
+description = "CUM: Curvature-Unified Muon optimizer"
+readme = "CUM_BUILD_GUIDE.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Kota Newman"}]
+dependencies = [
+    "torch>=2.2.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+benchmarks = [
+    "wandb>=0.16",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "torchvision>=0.17",
+]
+triton = [
+    "triton>=2.2.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-benchmark>=4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests requiring CUDA GPU",
+]
