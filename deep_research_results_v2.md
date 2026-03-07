@@ -1,0 +1,94 @@
+# Optimal singular value mapping for neural network matrix optimization
+
+**The theoretically optimal singular value mapping for gradient-based optimization does not exist as a solved problem — it sits at the unexplored intersection of two well-developed but distinct fields.** Optimal shrinkage theory (Donoho-Gavish) solves the estimation problem: given noisy observations, recover the true matrix. Steepest descent theory solves the geometry problem: given a gradient, find the best update under a norm constraint. Neither directly answers what SV mapping minimizes training loss. Your blend of NS₂ and NS₅ succeeds not because it approximates the sign function well, but because it *cancels the oscillatory failure mode* of the non-convergent Muon polynomial through destructive interference of even and odd iterates — reducing SV variance by ~37% while maintaining a mean output near **0.88**, which acts as implicit spectral norm regularization.
+
+The research landscape has shifted rapidly. The Polar Express paper derives Remez-optimal per-step polynomials that provably outperform fixed-coefficient NS. The Lion-K framework proves Muon solves a spectral-norm-constrained optimization problem. PolarGrad shows nuclear-norm scaling of the polar factor improves convergence. Together, these results reframe your core question: you are not searching for the best approximation to sign(σ), but for the best *optimization-aware* SV mapping — a fundamentally different target.
+
+## The "cursed quintic" oscillates rather than converges
+
+The NS polynomial p(σ) = 3.4445σ − 4.775σ³ + 2.0315σ⁵ was designed by Keller Jordan to maximize the derivative at zero (**p′(0) = 3.4445**), which aggressively inflates small singular values. But the coefficients sum to **0.701, not 1.0**, meaning p(1) = 0.701. This polynomial does not converge to the sign function — it oscillates. After 5 iterations, singular values scatter across approximately [0.68, 1.12] rather than concentrating at 1.0. Jeremy Bernstein's documentation at Modula confirms: "This iteration oscillates and in fact does not converge."
+
+The mathematical structure is revealing. The polynomial is non-monotone on [0, 1], peaking at σ ≈ 0.555 with p(0.555) ≈ 1.20, then declining. This non-monotonicity propagates through composition: p² maps [0, 1] → [0.70, 1.16], and p⁵ maps [0, 1] → [0.68, 1.12], both with wild oscillations. The derivative of the single polynomial changes sign at σ ≈ 0.555, creating a chaotic iterated map rather than a convergent one.
+
+The blend B(σ) = 0.75·p⁵(σ) + 0.25·p²(σ) exploits a crucial property: **even and odd iterates of a non-convergent map oscillate approximately out of phase**. Where p² is high, p⁵ tends to be low, and vice versa. Sampling values across [0, 1] confirms this anti-correlation — at σ = 0.1, p² = 0.99 (high) while p⁵ = 0.71 (low); at σ = 0.3, p² = 0.81 (low) while p⁵ = 1.08 (high). The weighted average B produces a range of [0.75, 1.02], reducing peak-to-peak oscillation amplitude by roughly **37%** compared to either p² or p⁵ alone.
+
+The blend's mean output is approximately **0.88** across all non-trivial σ values. This is neither the sign function (which maps to 1.0) nor the identity. It most closely resembles a noisy approximation to a constant function at 0.88, which corresponds to approximate Schatten-∞ steepest descent with an implicit contraction factor. The blend does not resemble soft thresholding, James-Stein shrinkage, or any finite Schatten-p steepest descent direction — it is functionally closest to a noisy sign function scaled by 0.88.
+
+## Estimation theory says shrink; optimization theory says equalize
+
+The disconnect between the two relevant theoretical frameworks is stark. **Donoho-Gavish optimal shrinkage** operates in the spiked matrix model Y = X + σZ. For an m×n matrix with aspect ratio β = m/n, the optimal hard threshold is **λ* = (4/√3)·√n·σ ≈ 2.309·√n·σ** for known noise level. Below the Baik-Ben Arous-Péché (BBP) phase transition at x = β^(1/4), singular vectors become uninformative — the optimal strategy is to zero them out entirely. Above the transition, the optimal Frobenius-loss shrinker is η*_F(y) = √((y² − β − 1)² − 4β)/y, which contracts observed SVs toward their true values using the BBP cosine formulas.
+
+Optimization theory tells a completely different story. The steepest descent direction under Schatten-p norm applies f(σ) = σ^(p−1) to gradient singular values. For nuclear norm (p = 1), this gives f(σ) = sign(σ) — full equalization, the polar factor UV^T. For Frobenius (p = 2), f(σ) = σ — standard gradient descent. The Lion-K framework (Chen et al., 2023) proves that Muon with weight decay λ implicitly solves the constrained problem **min F(X) subject to σ_max(X) ≤ 1/λ**, with exponentially fast constraint enforcement.
+
+The tension is fundamental:
+
+- **Estimation** says: kill small SVs below the MP edge (they carry no signal), shrink the rest toward truth
+- **Optimization** says: equalize all SVs (this is the steepest descent direction under spectral norm), amplify small SVs to explore all gradient directions equally
+
+The reconciliation likely involves the role of small gradient SVs. In estimation, small SVs below the noise floor are genuinely uninformative. In optimization, small gradient SVs may represent useful but underrepresented descent directions. Equalizing them gives the optimizer access to the full gradient subspace. Empirical evidence supports this: the NuMuon paper (arXiv:2603.03597) found that despite applying spectrally-uniform updates, Muon-trained models still develop pronounced low-rank weight structure — suggesting the optimizer benefits from exploring the full rank space even though the learned solution is low-rank.
+
+**No unified theory exists for optimal SV mapping in the optimization setting.** This is the central open problem. The closest synthesis would be a mapping that (1) equalizes SVs above a noise-dependent threshold to exploit all informative gradient directions, (2) applies moderate shrinkage near the threshold to hedge between signal and noise, and (3) suppresses SVs far below the threshold to avoid amplifying pure noise. This resembles a firm thresholding operator more than either the sign function or Donoho-Gavish shrinkage.
+
+## Spectral norm constraints explain why 0.877 beats 1.0
+
+The paper "Muon Optimizes Under Spectral Norm Constraints" (arXiv:2506.15054) provides the clearest explanation for why sub-unity SV mapping outperforms exact equalization. The key result: Muon with decoupled weight decay parameter λ implicitly enforces **σ_max(W) ≤ 1/λ**, with constraint violation decaying as (1 − ηλ)^t. The sub-unity output of the NS blend (mean ≈ 0.88) strengthens this contraction, providing a stability margin consistent with **Edge of Stability dynamics** (Cohen et al., ICLR 2021), where neural networks self-regulate to train near the maximum stable sharpness of 2/η.
+
+The Frank-Wolfe interpretation deepens this understanding. The matrix sign msign(G) = UV^T is the **linear minimization oracle (LMO) over the spectral norm ball**: it solves max_Z {⟨G, Z⟩ : ‖Z‖_op ≤ 1}. Muon is thus stochastic Frank-Wolfe on the spectral norm ball, and the spectral norm constraint on weights is the natural consequence of this geometry. The 0.88 contraction factor acts as a more conservative step within the constraint set, trading aggressive descent for better stability.
+
+The PolarGrad paper (arXiv:2505.21799) offers a complementary view: the update should be **‖G‖_* × UV^T** rather than just UV^T, scaling by the nuclear norm of the gradient. This nuclear norm scaling provides consistency (the update vanishes as the gradient approaches zero) and is the theoretically correct steepest descent step. PolarGrad outperforms both Adam and Muon, suggesting that the "right" SV mapping is not a fixed constant but should scale with the overall gradient magnitude.
+
+## Better function designs beyond polynomial sign approximation
+
+Since your framework computes the SVD explicitly, you are not limited to polynomials — you can apply *any* scalar function to singular values at negligible additional cost (the SVD dominates computation). This unlocks several promising alternatives.
+
+**Rational functions (Zolotarev approximation)** converge exponentially to the sign function, versus algebraically for polynomials. A degree-(5,5) Zolotarev rational achieves ~10⁻⁴ error where a degree-5 polynomial achieves ~0.5. In the SVD framework, applying r(σ) = P(σ)/Q(σ) is trivial scalar arithmetic on each SV. The computational barrier that makes Zolotarev impractical for iterative matrix methods (matrix inversions in bf16) vanishes entirely when you have the SVD.
+
+**Robust statistics influence functions** offer principled SV mappings designed for outlier handling. The Huber function derivative f(σ) = min(σ, c) provides linear response for small SVs and flat equalization for large SVs — precisely the behavior suggested by the estimation-optimization synthesis. The clipping threshold c becomes a tunable parameter controlling the transition from "preserve gradient structure" to "equalize." Winsorization f(σ) = clip(σ, σ_low, σ_high) provides two-sided control. These functions are monotone (unlike the NS blend), smooth or piecewise-smooth, and have well-studied theoretical properties.
+
+**Fractional power mappings** f(σ) = σ^α with 0 < α < 1 interpolate continuously between identity (α = 1, standard gradient) and sign function (α → 0, full equalization). This is exactly Schatten-p steepest descent with p = 1/(1−α) + 1. The parameter α directly controls the equalization strength and could be tuned or scheduled during training.
+
+**Firm thresholding operators** from the SCAD and MCP penalty families provide smooth transitions between soft and hard thresholding. The SCAD proximal operator linearly interpolates: it soft-thresholds small SVs, leaves large SVs unchanged, and smoothly transitions between these regimes. This addresses the noise-suppression-versus-equalization tradeoff with a principled two-parameter family.
+
+For polynomial design specifically, the **CANS paper** (Grishina et al., 2025, arXiv:2506.10935) applies Chebyshev's alternance theorem to derive optimal NS polynomial coefficients that guarantee convergence (coefficients sum to 1) while minimizing worst-case error. The **Polar Express** (Amsel et al., 2025, arXiv:2505.16932) goes further: it computes a different Remez-optimal polynomial at each NS iteration, adapted to the current spectral interval. This achieves **super-exponential convergence** (error decays as exp(−c·d^T) for degree-d polynomials over T iterations), outperforming all previous polynomial methods. If you want to stay in the polynomial NS framework, Polar Express is the provably optimal approach.
+
+**Semidefinite programming (SDP)** offers a systematic way to find optimal polynomial SV mappings empirically. The approach: (1) sample gradient SV distributions from your training setup, (2) formulate expected loss minimization over polynomial coefficients as a polynomial optimization problem, (3) solve via SOS relaxation using tools like SOSTOOLS or GloptiPoly. Monotonicity and boundedness constraints are naturally expressible as SOS conditions (Parrilo 2003, Lasserre 2001). This directly optimizes for training loss rather than sign approximation quality.
+
+## Adaptive mapping during training is theoretically motivated
+
+Gradient spectral structure changes substantially during training, suggesting that a fixed SV mapping is suboptimal. The SubTrack++ work (NeurIPS 2025) demonstrates that gradient subspaces stabilize progressively, with different layers stabilizing at different rates — query, key, and gate projections in transformers stabilize fastest due to inherent low-rank Hessian structure.
+
+The stochastic dynamics of singular values under SGD follow an **interacting particle system with repulsion**: dσ_k = [−∂L/∂σ_k + D·Σ_{j≠k} 1/(σ_k − σ_j)]dt + √(2D)dW_k. Early in training, the noise-driven repulsion spreads eigenvalues; later, the loss gradient term dominates, concentrating them into bulk+tail patterns. This evolution directly implies that the optimal SV mapping should change.
+
+A concrete scheduling strategy emerges from the theory. **Early training**, when gradients are more random and the SV distribution is spread (close to Marchenko-Pastur), benefits from moderate equalization — aggressive sign-function mapping might amplify noise. **Mid training**, as gradient subspaces stabilize and the SV distribution develops outliers encoding learned features, stronger equalization helps explore subordinate directions. **Late training**, when fine-tuning established features, softer equalization preserves the informative structure of the gradient. This can be implemented as a schedule over the Schatten-p parameter or the Huber clipping threshold.
+
+Per-layer adaptation is also motivated: layers with high condition number κ (spread SVs) benefit more from equalization than well-conditioned layers. The condition number can be estimated cheaply from the NS iteration's convergence rate or from the ratio of the largest to smallest SV from randomized SVD.
+
+## Exploiting SVD structure: temporal consistency and incremental updates
+
+Gradient singular vectors exhibit strong temporal consistency across training steps, as established by GaLore (Zhao et al., 2024) and the "Gradient Descent Happens in a Tiny Subspace" result (Gur-Ari et al., 2018). This consistency enables several computational optimizations that could make SVD-based methods practical at scale.
+
+**Randomized SVD** (Halko-Martinsson-Tropp, SIAM Review 2011) computes a rank-k approximation in O(mnk) time, dramatically cheaper than full SVD's O(mn·min(m,n)). With power iteration to sharpen spectral gaps, the error bound is ‖A − A_k‖ ≤ [1 + (4√(2·min(m,n))/(p−1))^{1/(2q+1)}] · σ_{k+1}, where q is the number of power iterations. For gradient matrices with rapidly decaying spectra, k = 50-100 may suffice to capture the informative subspace.
+
+**Incremental SVD updates** from the previous step's decomposition can track the slowly-evolving gradient subspace at O(mnk) cost per step, using Bunch-Nielsen-Sorensen-type rank-1 update formulas. The MoFaSGD paper (arXiv:2507.08091) demonstrates this practically, maintaining dynamically updated low-rank SVD factorizations of momentum.
+
+**Alignment between weight and gradient singular vectors** provides diagnostic information about training dynamics. When U_W ≈ U_G and V_W ≈ V_G, the gradient primarily adjusts existing weight singular values (refinement phase). When they are orthogonal, the gradient introduces new directions (exploration phase). The WeLore paper (arXiv:2407.11239) shows this alignment increases during training, with collapse in sign diversity predicting loss instabilities. Monitoring this alignment could trigger adaptive changes to the SV mapping.
+
+## The natural gradient connection and the operator geometry perspective
+
+The polar factor UV^T is **not** the natural gradient F^{−1}∇L, but both are "geometry-aware" alternatives to Euclidean gradient descent. The natural gradient uses the statistical geometry of the model's output distribution (Fisher information metric). The polar factor uses the operator geometry of the linear layer (spectral norm). Martens (JMLR 2020) clarified the distinction: the natural gradient descends most steeply per unit of KL-divergence change; the polar factor descends most steeply per unit of spectral norm change. For neural networks, where each layer is a linear operator, the spectral norm geometry is arguably more natural than the Euclidean geometry but less natural than the Fisher geometry.
+
+K-FAC (Martens & Grosse 2015) approximates the FIM as Kronecker products of input/output covariance matrices. Under NTK regime, multiple FIM approximations (including block-diagonal) achieve equivalent fast convergence because they produce **isotropic gradients in function space** — equalizing the correction applied to each training sample. The polar factor achieves a similar isotropy in *weight space* — equalizing the update across all gradient directions. These are distinct but related forms of preconditioning.
+
+The implicit regularization differs fundamentally between methods. Standard gradient descent implicitly minimizes the nuclear norm of learned weight matrices, favoring low-rank solutions (Gunasekar et al., NeurIPS 2017; Arora et al., NeurIPS 2019). Muon implicitly enforces a **spectral norm constraint** on weights — bounding the maximum singular value rather than promoting low rank. Despite this, Muon-trained models still develop low-rank structure, suggesting the loss landscape itself drives rank reduction independent of the optimizer's implicit bias.
+
+## Conclusion: toward a principled optimal SV mapping
+
+The central finding of this research is that your blend's success comes from canceling oscillation in a non-convergent iteration while producing an implicit contraction that acts as spectral norm regularization — but this is an accidental benefit, not a designed one. Several paths lead toward principled improvement.
+
+**The most promising immediate direction** is computing SVD explicitly and applying a Huber-like function: f(σ) = min(σ^α, c) where α < 1 controls equalization strength and c < 1 provides the sub-unity contraction. This is monotone (unlike the blend), parameterized simply, and theoretically grounded in both robust statistics and Schatten-p interpolation.
+
+**The deepest theoretical gap** is the absence of an optimal SV mapping theory for optimization. The estimation world has Donoho-Gavish; the geometry world has Schatten-p steepest descent. The optimization world needs a theory that accounts for both gradient noise structure (favoring shrinkage) and descent geometry (favoring equalization), potentially yielding a hybrid mapping that thresholds noise SVs while equalizing signal SVs.
+
+**The most actionable empirical direction** is SDP-based polynomial optimization: sample your gradient SV distributions, define training loss as the objective, impose monotonicity and boundedness via SOS constraints, and solve for optimal polynomial coefficients. This directly optimizes what you care about — training loss — rather than proxying through sign function approximation quality.
+
+**Three novel ideas deserve experimental priority**: (1) scheduled Schatten-p annealing from p ≈ 4 early to p ≈ 1 late in training, (2) per-layer Huber threshold adapted to the layer's gradient condition number, and (3) PolarGrad-style nuclear norm scaling combined with custom SV mapping rather than pure sign function. The theoretical frameworks now exist to make these principled rather than heuristic — the experimental validation is the remaining bottleneck.

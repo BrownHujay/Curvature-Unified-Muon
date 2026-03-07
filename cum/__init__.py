@@ -35,6 +35,8 @@ from .cum_6v7 import CUM6v7
 from .cum_6v8 import CUM6v8
 from .cum_6v9 import CUM6v9
 from .cum_7v1 import CUM7v1
+from .cum_8v1 import CUM8v1
+from .cum_9v1 import CUM9v1
 from .hybrid import CUMWithAuxAdam
 from .newton_schulz import newton_schulz_orthogonalize
 from .factored_precond import apply_factored_precond
@@ -80,6 +82,8 @@ __all__ = [
     "CUM6v8",
     "CUM6v9",
     "CUM7v1",
+    "CUM8v1",
+    "CUM9v1",
     "CUMWithAuxAdam",
     "newton_schulz_orthogonalize",
     "apply_factored_precond",

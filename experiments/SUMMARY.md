@@ -40,6 +40,35 @@
 | **5v6** | **SVD NS Blend s2 b=0.25** | **1.5048** | **-0.017** | **-0.013** | **NEW BEST** |
 | 5v6 | SVD NS Blend s2 b=0.15 | 1.5040-55 | -0.010-0.016 | — | BEST (consistent) |
 | 5v6 | SVD Tilt ε=0.1 | 1.5244 | +0.011 | — | FAILED |
+| **Series 6: Deep Research V1 Directions (H100 GPU, batch=32, 2000 steps)** |||||
+| 6v1 | Polar Express (Remez std) | 1.5204 | +0.009 | — | FAILED (converges to 1.0) |
+| 6v1 | Polar Express (blend) | 1.5335 | +0.022 | — | FAILED |
+| 6v2 | PolarGrad NS | 1.5473 | +0.036 | — | FAILED |
+| 6v2 | PolarGrad blend | 1.5485 | +0.037 | — | FAILED |
+| 6v3 | PSGD Kron | 2.3934 | +0.88 | — | FAILED (catastrophic) |
+| 6v4 | Dion full rank | 1.5328 | +0.021 | — | FAILED (exact polar = 1.0) |
+| 6v4 | Dion r=32 | 1.6440 | +0.13 | — | FAILED (low-rank too lossy) |
+| 6v5 | Halley 3iter | 1.5721 | +0.060 | — | FAILED (exact polar = 1.0) |
+| 6v5 | QDWH 3iter | CRASHED | — | — | FAILED (linalg.solve ill-cond) |
+| 6v6 | MARS γ=0.5 | 2.4905 | +0.98 | — | FAILED (catastrophic) |
+| 6v6 | MARS γ=1.0 | 2.5023 | +0.99 | — | FAILED (catastrophic) |
+| 6v7 | Warm-Started NS 2step | 3.0052 | +1.49 | — | FAILED (catastrophic) |
+| 6v7 | Warm-Started NS hybrid | NaN | — | — | FAILED (diverged) |
+| 6v8 | Optimal SV Shrinkage (hard) | 2.1458 | +0.63 | — | FAILED (zeroing SVs kills) |
+| 6v8 | Optimal SV Shrinkage (blend) | 1.5191 | +0.007 | — | FAILED (closest non-NS) |
+| 6v9 | Weighted Procrustes (mag) | 1.9280 | +0.42 | — | FAILED (SV ordering hurts) |
+| 6v9 | Weighted Procrustes (decay) | 1.9406 | +0.43 | — | FAILED |
+| **Series 7: Deep Research V2 — Huber SV Mapping (H100 GPU, batch=64, 1000 steps)** |||||
+| 7v1 | Huber α=0.1 c=0.88 | 1.5622 | +0.027 | — | FAILED (closest monotone) |
+| 7v1 | Huber α=0.3 c=0.85 | 1.7582 | +0.22 | — | FAILED |
+| 7v1 | Huber α=0.3 c=0.88 | 1.7513 | +0.22 | — | FAILED |
+| 7v1 | Huber α=0.3 c=0.92 | 1.7509 | +0.22 | — | FAILED |
+| 7v1 | Huber α=0.5 c=0.88 | 2.0170 | +0.48 | — | FAILED |
+| 7v1 | Huber α=0.7 c=0.88 | 2.2093 | +0.67 | — | FAILED |
+| 7v1 | Smooth Huber α=0.3 c=0.88 | 1.7818 | +0.25 | — | FAILED |
+| 7v1 | Power α=0.3 c=0.88 | 1.8009 | +0.27 | — | FAILED |
+| 7v1 | Scheduled α 0.5→0.1 c=0.88 | 1.8555 | +0.32 | — | FAILED |
+| 7v1 | Scheduled α 0.3→0.05 c=0.88 | 1.6912 | +0.16 | — | FAILED |
 
 ## Key Learnings
 
@@ -64,8 +93,27 @@
 19. **SVD-based SV manipulation is MORE PRECISE than matrix NS**: Computing exact SVs via SVD and applying the polynomial as a scalar function avoids floating point error accumulation across 5 matrix iterations. 5v6 SVD ns_blend consistently beats v5's matrix-level blend.
 20. **5v6 SVD ns_blend is the new BEST approach**: Consistently beats Muon by 0.010-0.017. The SVD framework also enables exploration of custom SV curves beyond what NS iteration can express.
 
+21. **ALL methods converging to SVs=1.0 lose to Muon**: Polar Express, Dion, Halley, PolarGrad — confirmed that exact polar factor is strictly worse. The 0.88 contraction IS essential.
+22. **Monotone SV mappings cannot match NS**: Any function preserving SV ordering (larger input → larger output) leaves too much spread. NS's oscillating non-monotone map achieves near-perfect equalization that no monotone function can. The Huber theory from DR v2 was wrong.
+23. **NS's oscillation IS the feature**: The polynomial doesn't converge (p(1)=0.701≠1.0). It scatters SVs across [0.68, 1.12]. The v5/5v6 blend works by CANCELING this oscillation (even/odd iterates are anti-correlated), producing a near-constant ~0.88. This is accidental but effective.
+24. **Variance reduction (MARS) catastrophic with NS**: NS(g_t - g_{t-1}) on tiny gradient differences produces random orthogonal matrices that dominate the update.
+25. **Warm-starting NS is fundamentally broken**: Starting NS from previous polar factor (already near-orthogonal) means NS barely changes it — you repeat last step's direction.
+26. **Learned preconditioners (PSGD Kron) diverge**: Lie group Kronecker learning needs careful tuning beyond simple drop-in.
+27. **Hard SV thresholding kills training**: Zeroing SVs below noise floor removes useful gradient directions.
+28. **Shrinkage-NS blend is closest alternative**: Donoho-Gavish blended with NS₅ at +0.007 vs Muon — respects both denoising and equalization, but still loses.
+29. **SVD-based methods 5x slower on GPU**: SVD isn't parallelizable like matmuls. On H100: SVD methods ~140s vs Muon ~30s. Matrix-iteration methods are the speed path.
+30. **The only winning strategy remains NS intermediate blending** (v5/5v6). 40+ experiments across 7 series confirm nothing else works.
+
+| **Series 8: Extended NS Iterate Blending (H100 GPU, batch=32, 2000 steps)** |||||
+| 8v1 | Two-point s2+NS₈ | PENDING | — | — | PENDING |
+| 8v1 | Two-point s3+NS₇ | PENDING | — | — | PENDING |
+| 8v1 | Three-point NS₁+NS₃+NS₅ | PENDING | — | — | PENDING |
+| 8v1 | Geometric SV blend | PENDING | — | — | PENDING |
+| **Series 9: General Intermediate Iterate Blending (H100 GPU, batch=32, 2000 steps)** |||||
+| 9v1 | Dual-momentum pre_ns | PENDING | — | — | PENDING |
+| 8v1 | Input blend (EMA of NS outputs) | PENDING | — | — | PENDING |
+
 ## Untested Ideas
+- **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
+- **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming
 - v6 (Adaptive Spectral Blend) — per-layer adaptive blend via spectral divergence
-- v8 (Multi-Scale Curvature Blend) — three-point NS₁/NS₃/NS₅ blend
-- **NS polynomial tuning** — design (a,b,c) coefficients with STABLE fixed points at different values. Current coefficients have an unstable fixed point at 0.868 — SVs oscillate, don't converge. Stable coefficients might behave very differently.
-- **Per-SV-group treatment** — instead of uniform NS, apply different convergence rates to top-k vs bottom SVs during iteration

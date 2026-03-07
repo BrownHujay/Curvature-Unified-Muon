@@ -120,6 +120,50 @@ def newton_schulz_triple_resolution(
     return X, ns3, ns1  # (full, mid, early)
 
 
+def newton_schulz_n_resolution(
+    G: Tensor,
+    steps: int = 5,
+    save_at: Tuple[int, ...] = (1, 3),
+    eps: float = 1e-7,
+) -> Tuple[Tensor, ...]:
+    """
+    Generalized NS iteration that saves intermediates at arbitrary steps.
+
+    Args:
+        G: Input matrix (m x n)
+        steps: Total NS iterations
+        save_at: Tuple of step numbers (1-indexed) at which to save intermediates
+        eps: Numerical stability
+
+    Returns:
+        (final, intermediate_1, intermediate_2, ...) in order of save_at
+    """
+    a, b, c = 3.4445, -4.7750, 2.0315
+    X = G / (G.norm() + eps)
+
+    transpose = G.size(0) > G.size(1)
+    if transpose:
+        X = X.T
+
+    save_set = set(save_at)
+    intermediates = {}
+    for i in range(steps):
+        A = X @ X.T
+        B = b * A + c * (A @ A)
+        X = a * X + B @ X
+        if (i + 1) in save_set:  # 1-indexed: step 1 means after first iteration
+            intermediates[i + 1] = X.T.clone() if transpose else X.clone()
+
+    if transpose:
+        X = X.T
+
+    # Return (final, *intermediates in save_at order)
+    result = [X]
+    for s in save_at:
+        result.append(intermediates.get(s, X))
+    return tuple(result)
+
+
 def newton_schulz_dampened(
     G: Tensor,
     steps: int = 5,
