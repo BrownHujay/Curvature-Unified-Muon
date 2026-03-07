@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
@@ -44,9 +45,13 @@ class CUM8v1(Optimizer):
     Systematically explores the space of NS iterate blending strategies:
 
     Modes (matrix path):
-    - "two_point": (1-b)*NS_n + b*scale(NS_k) — generalized v5 with any (save_at, ns_steps)
+    - "two_point": (1-b)*NS_n + b*scale(NS_k) — generalized v5
     - "three_point": (1-a-b)*NS_n + b*scale(NS_j) + a*scale(NS_i) — three iterates
     - "input_blend": EMA of past NS outputs blended into current NS output
+    - "combined": iterate blend + input blend together (within-step + across-step)
+    - "adaptive_residual": base + adaptive corrections from curvature & temporal signals
+    - "cosine_gated": corrections only applied when curvature & temporal signals agree
+    - "scheduled_three": three-point early, two-point late (anneal NS₁ weight to 0)
 
     Modes (SVD path):
     - "two_point": Same formula but via SVD scalar polynomial
@@ -78,6 +83,11 @@ class CUM8v1(Optimizer):
         # Input blend (matrix only)
         input_blend_beta: float = 0.5,   # EMA decay for denoised momentum
         input_blend_alpha: float = 0.15, # blend strength into NS output
+        # Adaptive residual params
+        alpha_curv: float = 0.15,     # base curvature correction weight
+        beta_temp: float = 0.15,      # base temporal correction weight
+        # Scheduled three-point params
+        total_steps: int = 2000,      # for scheduling
         eps: float = 1e-7,
         nesterov: bool = True,
     ):
@@ -88,6 +98,8 @@ class CUM8v1(Optimizer):
             blend_a=blend_a, blend_b=blend_b,
             sv_blend_mode=sv_blend_mode,
             input_blend_beta=input_blend_beta, input_blend_alpha=input_blend_alpha,
+            alpha_curv=alpha_curv, beta_temp=beta_temp,
+            total_steps=total_steps,
             eps=eps, nesterov=nesterov,
         )
         super().__init__(params, defaults)
@@ -192,6 +204,113 @@ class CUM8v1(Optimizer):
             else:
                 state["denoised_ema"].mul_(input_beta).add_(full, alpha=1 - input_beta)
             return _frobenius_blend(full, state["denoised_ema"], input_alpha, eps)
+
+        elif mode == "combined":
+            # Iterate blend (within-step) + input blend (across-step)
+            save_at = group["save_at"]
+            blend = group["blend"]
+            input_beta = group["input_blend_beta"]
+            input_alpha = group["input_blend_alpha"]
+            # Get NS₂ and NS₅
+            full, partial = newton_schulz_multi_resolution(
+                u, steps=ns_steps, save_at=save_at, eps=eps,
+            )
+            # Within-step: iterate blend
+            iterate_blended = _frobenius_blend(full, partial, blend, eps)
+            # Update EMA of blended outputs
+            if "denoised_ema" not in state:
+                state["denoised_ema"] = iterate_blended.clone()
+            else:
+                state["denoised_ema"].mul_(input_beta).add_(
+                    iterate_blended, alpha=1 - input_beta
+                )
+            # Across-step: temporal blend
+            return _frobenius_blend(iterate_blended, state["denoised_ema"], input_alpha, eps)
+
+        elif mode == "adaptive_residual":
+            # base + adaptive corrections from curvature & temporal signals
+            save_at = group["save_at"]
+            alpha_c = group["alpha_curv"]
+            beta_t = group["beta_temp"]
+            input_beta = group["input_blend_beta"]
+            full, partial = newton_schulz_multi_resolution(
+                u, steps=ns_steps, save_at=save_at, eps=eps,
+            )
+            # Update EMA
+            if "denoised_ema" not in state:
+                state["denoised_ema"] = full.clone()
+            else:
+                state["denoised_ema"].mul_(input_beta).add_(full, alpha=1 - input_beta)
+            # Compute residuals
+            base_norm = full.norm() + eps
+            # Scale partial to match full norm before computing residual
+            p_norm = partial.norm()
+            partial_scaled = partial * (base_norm / (p_norm + eps)) if p_norm > eps else partial
+            delta_curv = partial_scaled - full  # curvature destroyed by NS steps 3-5
+            # Scale EMA to match full norm before computing residual
+            e_norm = state["denoised_ema"].norm()
+            ema_scaled = state["denoised_ema"] * (base_norm / (e_norm + eps)) if e_norm > eps else state["denoised_ema"]
+            delta_temp = ema_scaled - full      # temporal consistency correction
+            # Adaptive weights: trust corrections proportional to their relative magnitude
+            curv_ratio = delta_curv.norm() / base_norm
+            temp_ratio = delta_temp.norm() / base_norm
+            w_curv = alpha_c * curv_ratio       # more curvature = more correction
+            w_temp = beta_t / (1.0 + temp_ratio)  # more instability = less trust
+            return full + w_curv * delta_curv + w_temp * delta_temp
+
+        elif mode == "cosine_gated":
+            # Corrections gated by agreement between curvature & temporal signals
+            save_at = group["save_at"]
+            alpha_c = group["alpha_curv"]
+            beta_t = group["beta_temp"]
+            input_beta = group["input_blend_beta"]
+            full, partial = newton_schulz_multi_resolution(
+                u, steps=ns_steps, save_at=save_at, eps=eps,
+            )
+            # Update EMA
+            if "denoised_ema" not in state:
+                state["denoised_ema"] = full.clone()
+            else:
+                state["denoised_ema"].mul_(input_beta).add_(full, alpha=1 - input_beta)
+            # Compute residuals (norm-matched)
+            base_norm = full.norm() + eps
+            p_norm = partial.norm()
+            partial_scaled = partial * (base_norm / (p_norm + eps)) if p_norm > eps else partial
+            delta_curv = partial_scaled - full
+            e_norm = state["denoised_ema"].norm()
+            ema_scaled = state["denoised_ema"] * (base_norm / (e_norm + eps)) if e_norm > eps else state["denoised_ema"]
+            delta_temp = ema_scaled - full
+            # Gate: only inject when curvature and temporal corrections agree
+            dc_norm = delta_curv.norm() + eps
+            dt_norm = delta_temp.norm() + eps
+            cos_sim = (delta_curv * delta_temp).sum() / (dc_norm * dt_norm)
+            gate = cos_sim.clamp(min=0.0)  # only positive agreement
+            return full + gate * (alpha_c * delta_curv + beta_t * delta_temp)
+
+        elif mode == "scheduled_three":
+            # Three-point early (fast convergence), two-point late (clean finish)
+            # NS₁ weight anneals from blend_a to 0 over training
+            save_at_a = group["save_at_a"]
+            save_at_b = group["save_at_b"]
+            blend_a_max = group["blend_a"]
+            blend_b = group["blend_b"]
+            total = group["total_steps"]
+            final, inter_a, inter_b = newton_schulz_n_resolution(
+                u, steps=ns_steps, save_at=(save_at_a, save_at_b), eps=eps,
+            )
+            # Cosine anneal blend_a from blend_a_max to 0
+            progress = min(state["step"] / max(total, 1), 1.0)
+            blend_a = blend_a_max * 0.5 * (1 + math.cos(math.pi * progress))
+            # Three-point blend with scheduled weights
+            f_norm = final.norm()
+            a_norm = inter_a.norm()
+            b_norm = inter_b.norm()
+            result = (1 - blend_a - blend_b) * final
+            if a_norm > eps:
+                result = result + blend_a * inter_a * (f_norm / a_norm)
+            if b_norm > eps:
+                result = result + blend_b * inter_b * (f_norm / b_norm)
+            return result
 
         else:
             raise ValueError(f"Unknown matrix mode: {mode}")
