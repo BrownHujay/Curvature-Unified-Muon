@@ -154,6 +154,26 @@
 46. **Temporal averaging does NOT generalize to Adam.** SmoothedAdam worse than AdamW (+0.004 at α=0.15, +0.012 at α=0.30). Adam has no structured oscillation to cancel. Blending without oscillation = sluggishness. The principle is NS-specific.
 47. **The mechanism is oscillation cancellation, not generic smoothing.** Confirmed by: (a) stable polynomial fails (no oscillation = no equalization), (b) SmoothedAdam fails (no oscillation = blending hurts), (c) combined succeeds only with standard oscillating polynomial.
 
+| **Series 12: Bifurcation Sweep, TD(λ), Adaptive Scheduling (A100 GPU, batch=32, 2000 steps)** |||||
+| 12v1 | d=-1.0 combined (bifurcation boundary) | 1.5033 | -0.0152 | — | MARGINAL (-0.001 vs combined, within noise) |
+| 12v1 | d=-1.4 combined | 1.5133 | -0.0052 | — | WORSE than standard combined (noise) |
+| 12v1 | d=-1.58 combined (≈standard) | 1.5055 | -0.0088 | — | Matches combined (expected) |
+| 12v1 | d=-2.0 combined | 1.5102 | -0.0042 | — | Worse with more oscillation |
+| 12v1 | d=-2.8 combined | 1.5212 | +0.0068 | — | FAILED (too much oscillation hurts even with blending) |
+| **12v2** | **TD(λ=0.5) +temporal** | **1.5011** | **-0.0156** | — | **NEW BEST: -0.004 vs combined (same run)** |
+| 12v2 | TD(λ=0.3) +temporal | 1.5062 | -0.0106 | — | Ties combined (too concentrated on NS₅) |
+| 12v2 | TD(λ=0.5) no-temporal | 1.5087 | -0.0110 | — | Multi-iterate alone ≈ input-blend level |
+| 12v2 | TD(λ=0.7) +temporal | 1.5093 | -0.0104 | — | Too much early iterate noise |
+| 12v2 | TD(λ=0.9) +temporal | 1.5103 | -0.0094 | — | Near-uniform: even more noise |
+| 12v3 | Adaptive sched -1.8→-1.0 | 1.5120 | -0.0106 | — | FAILED (worse than constant combined) |
+| 12v3 | Adaptive sched -2.2→-1.2 | 1.5154 | -0.0072 | — | FAILED (starting strong oscillation hurts) |
+
+48. **TD(λ) multi-iterate blending beats two-point blending.** λ=0.5 +temporal beat combined by -0.004 in same run. NS₃ and NS₄ carry useful oscillation-cancellation info that two-point (NS₂+NS₅) discards. More samples of oscillatory process → better cancellation (Nyquist principle).
+49. **Within-step and across-step cancellation are orthogonal channels.** TD(λ=0.5) alone: -0.011 vs Muon. TD(λ=0.5) + temporal EMA: -0.016. The ~0.005 temporal contribution stacks on top of multi-iterate blending.
+50. **Weaker polynomial oscillation is marginally better with blending.** d=-1.0 (bifurcation boundary) best, d=-2.8 catastrophic. When iterate blending handles cancellation, the polynomial should minimize oscillation while maximizing equalization speed. But effect is small (-0.001 vs standard combined).
+51. **Oscillation scheduling is a dead end.** Annealing polynomial dynamics over training doesn't help. Optimal dynamics should be constant — there's no "explore more early" benefit in NS polynomial space.
+52. **λ=0.5 is the TD(λ) sweet spot.** λ=0.3 too concentrated on final iterate (similar to two-point). λ=0.7+ lets too much early iterate noise through. λ=0.5 balances useful middle iterates (NS₃: 13%, NS₄: 26%) with noise suppression.
+
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
 - **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming

@@ -20,7 +20,25 @@ from torch import Tensor
 from torch.optim.optimizer import Optimizer
 
 from .newton_schulz import newton_schulz_n_resolution
+from .cum_12v1 import bifurcation_coeffs
 from .utils import aspect_ratio_scale
+
+
+def _custom_ns_all(
+    G: Tensor, steps: int, ns_a: float, ns_b: float, ns_c: float, eps: float,
+) -> list:
+    """Run custom polynomial NS and return ALL iterates [NS_1, NS_2, ..., NS_n]."""
+    X = G / (G.norm() + eps)
+    transposed = G.size(0) > G.size(1)
+    if transposed:
+        X = X.T
+    iterates = []
+    for i in range(steps):
+        A = X @ X.T
+        B = ns_b * A + ns_c * (A @ A)
+        X = ns_a * X + B @ X
+        iterates.append(X.T.clone() if transposed else X.clone())
+    return iterates
 
 
 def _frobenius_blend(primary: Tensor, secondary: Tensor, weight: float, eps: float) -> Tensor:
@@ -52,15 +70,22 @@ class CUM12v2(Optimizer):
         use_temporal: bool = True,
         input_blend_beta: float = 0.5,
         input_blend_alpha: float = 0.15,
+        deriv: float | None = None,
+        sigma_star: float = 0.868,
+        c_coeff: float = 2.0315,
         eps: float = 1e-7,
         nesterov: bool = True,
     ):
+        ns_a = ns_b = ns_c = None
+        if deriv is not None:
+            ns_a, ns_b, ns_c = bifurcation_coeffs(deriv, sigma_star, c_coeff)
         defaults = dict(
             lr=lr, beta1=beta1,
             td_lambda=td_lambda, ns_steps=ns_steps,
             use_temporal=use_temporal,
             input_blend_beta=input_blend_beta,
             input_blend_alpha=input_blend_alpha,
+            ns_a=ns_a, ns_b=ns_b, ns_c=ns_c,
             eps=eps, nesterov=nesterov,
         )
         super().__init__(params, defaults)
@@ -115,14 +140,23 @@ class CUM12v2(Optimizer):
                 else:
                     u = mb.clone()
 
-                # Get all NS intermediates: (NS_n, NS_1, NS_2, ..., NS_{n-1})
-                all_results = newton_schulz_n_resolution(
-                    u, steps=ns_steps, save_at=save_at, eps=eps,
-                )
-                # Reorder to [NS_1, NS_2, ..., NS_n]
-                final = all_results[0]
-                intermediates = list(all_results[1:])  # [NS_1, ..., NS_{n-1}]
-                all_iterates = intermediates + [final]  # [NS_1, ..., NS_n]
+                # Get all NS intermediates
+                ns_a = group["ns_a"]
+                if ns_a is not None:
+                    # Custom polynomial: use bifurcation coefficients
+                    all_iterates = _custom_ns_all(
+                        u, ns_steps, ns_a, group["ns_b"], group["ns_c"], eps,
+                    )
+                else:
+                    # Standard polynomial: (NS_n, NS_1, NS_2, ..., NS_{n-1})
+                    all_results = newton_schulz_n_resolution(
+                        u, steps=ns_steps, save_at=save_at, eps=eps,
+                    )
+                    final_std = all_results[0]
+                    intermediates = list(all_results[1:])
+                    all_iterates = intermediates + [final_std]
+
+                final = all_iterates[-1]
 
                 # Norm-match all to final's norm, then weighted sum
                 f_norm = final.norm()
