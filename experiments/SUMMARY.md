@@ -130,6 +130,11 @@
 | **8v1** | **Combined (3rd run)** | **1.5091** | **-0.0122** | — | **CONFIRMED (3 runs: mean -0.016±0.004)** |
 | **11v3** | **Un-equalization α=0.05** | **1.5077** | **-0.0136** | — | **PROMISING: -0.0014 vs combined. Needs replication** |
 | 11v2 | Adaptive blend s=1.0 | 1.5113 | -0.0101 | — | FAILED (+0.002 vs combined, adapting amounts doesn't help) |
+| **Series 11c: Scale Test (124M params, WikiText-103, A100 GPU, 2000 steps)** |||||
+| **8v1** | **Combined (124M)** | **4.1393** | **-0.0144** | — | **HOLDS AT SCALE (same as 1.2M mean -0.016)** |
+| **Series 11d: Generalization Test (1.2M MicroGPT, A100 GPU, 2000 steps)** |||||
+| — | SmoothedAdam α=0.15 | 1.6080 | +0.0039 vs AdamW | — | FAILED (temporal avg hurts Adam) |
+| — | SmoothedAdam α=0.30 | 1.6162 | +0.0122 vs AdamW | — | FAILED (more smoothing = more damage) |
 
 31. **Within-run rankings are reliable; cross-run absolutes are not.** torch.compile causes ±0.006 shifts but ordering is preserved.
 32. ~~**Input-blend ties 5v6 at matrix-path speed.**~~ REVISED: input-blend unstable (flipped to +0.004 in run 3). Combined mode more promising.
@@ -145,6 +150,9 @@
 42. **Per-layer adaptive blend fails**: adapting the AMOUNT of uniform blending per layer (+0.002 vs combined). Even "smart amount" adaptation doesn't beat fixed weights. Combined's uniform blend is already near-optimal.
 43. **5% row-wise un-equalization shows signal**: -0.0014 vs combined, with characteristic "behind early → ahead late" trajectory (row-norm EMA warmup). If real, this is a third axis: (1) within-step oscillation cancel, (2) across-step oscillation cancel, (3) post-blend curvature recovery. ONE RUN — needs replication.
 44. **Combined mean across 3 runs: -0.016 ± 0.004 vs Muon.** Runs: -0.019, -0.016, -0.012. Solidly confirmed.
+45. **Combined holds at 124M params.** -0.014 vs Muon on GPT-2 Small / WikiText-103. Same late-game acceleration pattern (behind early, ahead late). Deep research predicted advantage might vanish at scale — it didn't.
+46. **Temporal averaging does NOT generalize to Adam.** SmoothedAdam worse than AdamW (+0.004 at α=0.15, +0.012 at α=0.30). Adam has no structured oscillation to cancel. Blending without oscillation = sluggishness. The principle is NS-specific.
+47. **The mechanism is oscillation cancellation, not generic smoothing.** Confirmed by: (a) stable polynomial fails (no oscillation = no equalization), (b) SmoothedAdam fails (no oscillation = blending hurts), (c) combined succeeds only with standard oscillating polynomial.
 
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
