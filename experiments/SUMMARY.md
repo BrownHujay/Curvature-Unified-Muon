@@ -123,6 +123,13 @@
 | **8v1** | **Combined (iterate+input)** | **1.5008** | **-0.0191** | — | **NEW RECORD? Needs replication** |
 | 8v1 | Scheduled three-point | 1.5173 | -0.0027 | — | Marginal, not worth complexity |
 | 8v1 | Input-blend (run 3) | 1.5237 | +0.0037 | — | REGRESSED — instability revealed |
+| **8v1** | **Combined (replication)** | **1.5062** | **-0.0162** | — | **CONFIRMED (2 runs: -0.019, -0.016)** |
+| **Series 11: Learned Polynomial + Adaptive + Un-Equalization (A100 GPU, batch=32, 2000 steps)** |||||
+| 11v1 | Stable-0.88 basic (2.0, -1.94, 0.84) | 1.5671 | +0.0448 | — | FAILED (catastrophic — weak equalization) |
+| 11v1 | Stable-0.88 combined | 1.5544 | +0.0321 | — | FAILED (can't fix fundamental deficit) |
+| **8v1** | **Combined (3rd run)** | **1.5091** | **-0.0122** | — | **CONFIRMED (3 runs: mean -0.016±0.004)** |
+| **11v3** | **Un-equalization α=0.05** | **1.5077** | **-0.0136** | — | **PROMISING: -0.0014 vs combined. Needs replication** |
+| 11v2 | Adaptive blend s=1.0 | 1.5113 | -0.0101 | — | FAILED (+0.002 vs combined, adapting amounts doesn't help) |
 
 31. **Within-run rankings are reliable; cross-run absolutes are not.** torch.compile causes ±0.006 shifts but ordering is preserved.
 32. ~~**Input-blend ties 5v6 at matrix-path speed.**~~ REVISED: input-blend unstable (flipped to +0.004 in run 3). Combined mode more promising.
@@ -132,6 +139,12 @@
 36. **Smart correction weighting fails.** Magnitude-based (adaptive-res) and agreement-based (cosine-gated) both Muon-tier. Intelligent weighting breaks statistical cancellation.
 37. **Simple averaging beats complex weighting.** Combined = two layers of simple blend. Adaptive/cosine = one layer of complex logic. Simple wins.
 38. **Input-blend mean: -0.005±0.006 vs Muon** (4 runs). Real but noisy. Not the -0.010 initially claimed.
+39. **Combined mode CONFIRMED across 2 runs**: -0.019 and -0.016 vs Muon. Delta between runs (0.003) is within noise. Combined is real.
+40. **Stable-0.88 polynomial catastrophically fails**: +0.045 basic, +0.032 combined vs Muon. The oscillation isn't the feature — AGGRESSIVE EQUALIZATION is. Large polynomial coefficients are needed to pull small SVs up fast enough (σ=0.1→0.34 in one step). Those same large coefficients cause oscillation (|p'|>1 at fixed point). You can't decouple them with degree-5 in 5 steps. Blending is Phase 2: extracts equalization benefit while canceling oscillation cost.
+41. **Revised learning 23**: oscillation is not "the feature" but the unavoidable price of aggressive equalization. The feature is the equalization itself.
+42. **Per-layer adaptive blend fails**: adapting the AMOUNT of uniform blending per layer (+0.002 vs combined). Even "smart amount" adaptation doesn't beat fixed weights. Combined's uniform blend is already near-optimal.
+43. **5% row-wise un-equalization shows signal**: -0.0014 vs combined, with characteristic "behind early → ahead late" trajectory (row-norm EMA warmup). If real, this is a third axis: (1) within-step oscillation cancel, (2) across-step oscillation cancel, (3) post-blend curvature recovery. ONE RUN — needs replication.
+44. **Combined mean across 3 runs: -0.016 ± 0.004 vs Muon.** Runs: -0.019, -0.016, -0.012. Solidly confirmed.
 
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
