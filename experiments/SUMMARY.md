@@ -104,14 +104,34 @@
 29. **SVD-based methods 5x slower on GPU**: SVD isn't parallelizable like matmuls. On H100: SVD methods ~140s vs Muon ~30s. Matrix-iteration methods are the speed path.
 30. **The only winning strategy remains NS intermediate blending** (v5/5v6). 40+ experiments across 7 series confirm nothing else works.
 
-| **Series 8: Extended NS Iterate Blending (H100 GPU, batch=32, 2000 steps)** |||||
-| 8v1 | Two-point s2+NS₈ | PENDING | — | — | PENDING |
-| 8v1 | Two-point s3+NS₇ | PENDING | — | — | PENDING |
-| 8v1 | Three-point NS₁+NS₃+NS₅ | PENDING | — | — | PENDING |
-| 8v1 | Geometric SV blend | PENDING | — | — | PENDING |
-| **Series 9: General Intermediate Iterate Blending (H100 GPU, batch=32, 2000 steps)** |||||
-| 9v1 | Dual-momentum pre_ns | PENDING | — | — | PENDING |
-| 8v1 | Input blend (EMA of NS outputs) | PENDING | — | — | PENDING |
+| **Series 8: Extended NS Iterate Blending (A100 GPU, batch=32, 2000 steps)** |||||
+| 8v1 | Two-point s2+NS₈ b=0.15 | 1.5203 | -0.0015 | — | NOISE (flips ±0.005) |
+| 8v1 | Two-point s3+NS₇ b=0.15 | 1.5193 | -0.0025 | — | NOISE (flips ±0.005) |
+| 8v1 | Three-point NS₁+NS₃+NS₅ | 1.5225 | +0.0106 | — | FAILED (NS₁ noise late) |
+| 8v1 | Geometric SV blend s2 b=0.15 | 1.5087 | -0.0032 | — | TIES 5v6 (same SVD cost) |
+| **Series 9: General Intermediate Iterate Blending (A100 GPU, batch=32, 2000 steps)** |||||
+| 9v1 | Dual-momentum pre_ns | 1.5294 | +0.0045 | — | FAILED (NS washes out) |
+| **8v1** | **Input blend β=0.5 α=0.15** | **1.5139** | **-0.0110** | — | **BEST PRACTICAL (48s)** |
+| **Series 10: Replication & Noise Analysis (A100 GPU, batch=32, 2000 steps)** |||||
+| 8v1 | Two-point s2+NS₈ repl. | 1.5199 | +0.0045 | — | FAILED (8a was noise) |
+| 8v1 | Two-point s3+NS₇ repl. | 1.5200 | +0.0047 | — | FAILED (8a was noise) |
+| 8v1 | Geom SV repl. | 1.5107 | -0.0073 | — | Consistently 2nd (arithmetic > geometric) |
+| 8v1 | Three-point repl. | 1.5198 | +0.0018 | — | Muon-tier, always last |
+| **8v1** | **Input-blend repl.** | **1.5107** | **-0.0103** | — | **CONFIRMED: ties 5v6, 4.4x faster** |
+| 9v1 | Dual-momentum pre_ns repl. | 1.5164 | -0.0046 | — | REVISED: noise (±0.005), not harmful |
+
+| **8v1** | **Combined (iterate+input)** | **1.5008** | **-0.0191** | — | **NEW RECORD? Needs replication** |
+| 8v1 | Scheduled three-point | 1.5173 | -0.0027 | — | Marginal, not worth complexity |
+| 8v1 | Input-blend (run 3) | 1.5237 | +0.0037 | — | REGRESSED — instability revealed |
+
+31. **Within-run rankings are reliable; cross-run absolutes are not.** torch.compile causes ±0.006 shifts but ordering is preserved.
+32. ~~**Input-blend ties 5v6 at matrix-path speed.**~~ REVISED: input-blend unstable (flipped to +0.004 in run 3). Combined mode more promising.
+33. **Input-blend has trajectory dominance early** but can crash late-game. Not as stable as initially claimed.
+34. **Modifying NS input is irrelevant, not harmful.** 9v1 pre_ns flips ±0.005 vs Muon across runs. NS Jacobian contracts perturbations to noise.
+35. **Double oscillation cancellation (combined mode) may be the real breakthrough.** Within-step iterate blend + across-step temporal blend = -0.019 vs Muon at matrix speed. Systematic late-game acceleration. ONE RUN — needs replication.
+36. **Smart correction weighting fails.** Magnitude-based (adaptive-res) and agreement-based (cosine-gated) both Muon-tier. Intelligent weighting breaks statistical cancellation.
+37. **Simple averaging beats complex weighting.** Combined = two layers of simple blend. Adaptive/cosine = one layer of complex logic. Simple wins.
+38. **Input-blend mean: -0.005±0.006 vs Muon** (4 runs). Real but noisy. Not the -0.010 initially claimed.
 
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
