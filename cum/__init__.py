@@ -44,6 +44,7 @@ from .smoothed_optimizers import SmoothedAdam
 from .cum_12v1 import CUM12v1
 from .cum_12v2 import CUM12v2
 from .cum_12v3 import CUM12v3
+from .cum_13v1 import CUM13v1
 from .hybrid import CUMWithAuxAdam
 from .newton_schulz import newton_schulz_orthogonalize
 from .factored_precond import apply_factored_precond
@@ -98,6 +99,7 @@ __all__ = [
     "CUM12v1",
     "CUM12v2",
     "CUM12v3",
+    "CUM13v1",
     "CUMWithAuxAdam",
     "newton_schulz_orthogonalize",
     "apply_factored_precond",

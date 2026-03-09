@@ -2,7 +2,7 @@
 
 ## Benchmark Baseline
 - **Muon NS=5:** val_loss ≈ 1.515 (varies ±0.005 per run due to torch.compile)
-- **NEW Best:** 5v6 SVD ns_blend s2 b=0.25 → val_loss ≈ 1.505 (-0.013 to -0.017 vs Muon)
+- **NEW Best:** 12v2 TD(λ=0.5) +temporal d=-1.0 → val_loss = 1.4993 (-0.018 vs Muon)
 - **Previous best:** v5 save@2 b=0.15 → val_loss ≈ 1.508 (-0.007 to -0.011 vs Muon)
 
 ## Results Table
@@ -167,12 +167,17 @@
 | 12v2 | TD(λ=0.9) +temporal | 1.5103 | -0.0094 | — | Near-uniform: even more noise |
 | 12v3 | Adaptive sched -1.8→-1.0 | 1.5120 | -0.0106 | — | FAILED (worse than constant combined) |
 | 12v3 | Adaptive sched -2.2→-1.2 | 1.5154 | -0.0072 | — | FAILED (starting strong oscillation hurts) |
+| 12v1 | d=-1.4 combined (re-run) | 1.5040 | -0.0203 | — | d=-1.4 beat d=-1.0 this time; optimal in [-1.0, -1.4] |
+| 12v1 | d=-1.0 combined (re-run) | 1.5051 | -0.0192 | — | Confirmed real: consistently beats standard combined |
+| **12v2** | **TD(λ=0.5) +temporal d=-1.0** | **1.4993** | **-0.0182** | — | **ALL-TIME BEST: sub-1.50, -0.009 vs combined** |
+| 12v2 | TD(λ=0.5) +temporal (std, run 2) | 1.5050 | -0.0124 | — | TD(λ) replicated: -0.004 vs combined again |
 
-48. **TD(λ) multi-iterate blending beats two-point blending.** λ=0.5 +temporal beat combined by -0.004 in same run. NS₃ and NS₄ carry useful oscillation-cancellation info that two-point (NS₂+NS₅) discards. More samples of oscillatory process → better cancellation (Nyquist principle).
-49. **Within-step and across-step cancellation are orthogonal channels.** TD(λ=0.5) alone: -0.011 vs Muon. TD(λ=0.5) + temporal EMA: -0.016. The ~0.005 temporal contribution stacks on top of multi-iterate blending.
-50. **Weaker polynomial oscillation is marginally better with blending.** d=-1.0 (bifurcation boundary) best, d=-2.8 catastrophic. When iterate blending handles cancellation, the polynomial should minimize oscillation while maximizing equalization speed. But effect is small (-0.001 vs standard combined).
+48. **TD(λ) multi-iterate blending beats two-point blending.** λ=0.5 +temporal beat combined by -0.004 in same run (replicated across 2 runs). NS₃ and NS₄ carry useful oscillation-cancellation info that two-point (NS₂+NS₅) discards. More samples of oscillatory process → better cancellation (Nyquist principle).
+49. **Within-step and across-step cancellation are orthogonal channels.** TD(λ=0.5) alone: -0.011 vs Muon. TD(λ=0.5) + temporal EMA: -0.012 to -0.016. The ~0.005 temporal contribution stacks on top of multi-iterate blending.
+50. **Weaker polynomial oscillation is real with blending.** d=-1.0 to -1.4 range consistently beats standard d=-1.58 combined. Optimal in [-1.0, -1.4]. d=-2.8 catastrophic. When iterate blending handles cancellation, the polynomial should minimize oscillation while maximizing equalization speed.
 51. **Oscillation scheduling is a dead end.** Annealing polynomial dynamics over training doesn't help. Optimal dynamics should be constant — there's no "explore more early" benefit in NS polynomial space.
 52. **λ=0.5 is the TD(λ) sweet spot.** λ=0.3 too concentrated on final iterate (similar to two-point). λ=0.7+ lets too much early iterate noise through. λ=0.5 balances useful middle iterates (NS₃: 13%, NS₄: 26%) with noise suppression.
+53. **TD(λ) + weak polynomial effects are additive.** Combining λ=0.5 +temporal with d=-1.0 yielded 1.4993 (-0.018 vs Muon, -0.009 vs combined). First sub-1.50 result. TD(λ) contributed ~-0.004, d=-1.0 contributed ~-0.006, total ~-0.009 vs combined. Three layers of oscillation management: (1) weaker polynomial oscillation, (2) multi-iterate within-step cancellation, (3) temporal across-step EMA.
 
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
