@@ -179,6 +179,18 @@
 52. **λ=0.5 is the TD(λ) sweet spot.** λ=0.3 too concentrated on final iterate (similar to two-point). λ=0.7+ lets too much early iterate noise through. λ=0.5 balances useful middle iterates (NS₃: 13%, NS₄: 26%) with noise suppression.
 53. **TD(λ) + weak polynomial effects are additive.** Combining λ=0.5 +temporal with d=-1.0 yielded 1.4993 (-0.018 vs Muon, -0.009 vs combined). First sub-1.50 result. TD(λ) contributed ~-0.004, d=-1.0 contributed ~-0.006, total ~-0.009 vs combined. Three layers of oscillation management: (1) weaker polynomial oscillation, (2) multi-iterate within-step cancellation, (3) temporal across-step EMA.
 
+| **Series 13: Minimax-Optimal Polynomials from Theory (A100 GPU, batch=32, 2000 steps)** |||||
+| 13v1 | Minimax basic (a=2.68) | 1.5304 | +0.023 vs combined | — | FAILED (too gentle) |
+| 13v1 | Minimax combined (a=2.68) | 1.5253 | +0.017 vs combined | — | FAILED (barely beats Muon) |
+| 13v1 | Minvar combined (a=2.23) | 1.5444 | +0.020 | — | FAILED (weakest coefficients = worst) |
+| 13v1 | L2 combined (a=2.67) | 1.5302 | +0.006 | — | FAILED |
+| 13v1 | Minimax td (full recipe) | 1.5222 | -0.0003 | — | FAILED (Muon-tier with full treatment) |
+| **12v2** | **Final recipe (3rd replication)** | **1.4992** | **-0.0233** | — | **CONFIRMED (3 runs: 1.4993, 1.4993, 1.4992)** |
+
+54. **Coefficient magnitude trumps equalization quality.** The `a` coefficient (linear term) controls small-SV inflation speed. a≥~3.0 is non-negotiable. Minimax-optimal polynomials (a=2.68) achieve near-perfect equalization (Var[p⁵]≈0) but inflate small SVs 22% slower per step. After 5 iterations this compounds fatally. The hierarchy: (1) fast inflation (large a), (2) oscillation management (blending), (3) equalization quality (least important — 17x worse equalization still wins).
+55. **The bifurcation family constraint is structural, not arbitrary.** Polynomials parameterized by p'(σ*) with fixed point at σ*=0.868 are FORCED to have large enough coefficients (a≥~3.0 for useful d range). Unconstrained optimization finds "gentle" polynomials that equalize by being weak, not by being aggressive-then-canceling. The constraint preserves the property that matters most.
+56. **Dose-response: a=2.0 (+0.045), a=2.23 (+0.020), a=2.68 (+0.017 vs combined), a=3.15 (-0.018 vs Muon).** Clear monotonic relationship between linear coefficient magnitude and performance. No sweet spot at intermediate values.
+
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
 - **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming

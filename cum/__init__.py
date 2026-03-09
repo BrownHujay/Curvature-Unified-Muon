@@ -46,6 +46,7 @@ from .cum_12v2 import CUM12v2
 from .cum_12v3 import CUM12v3
 from .cum_13v1 import CUM13v1
 from .hybrid import CUMWithAuxAdam
+from .cum_14v1 import CUM14v1
 from .newton_schulz import newton_schulz_orthogonalize
 from .factored_precond import apply_factored_precond
 from .spectral_control import spectral_damping
@@ -103,5 +104,6 @@ __all__ = [
     "CUMWithAuxAdam",
     "newton_schulz_orthogonalize",
     "apply_factored_precond",
+    "CUM14v1",
     "spectral_damping",
 ]
