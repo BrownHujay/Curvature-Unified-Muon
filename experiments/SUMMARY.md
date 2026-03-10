@@ -2,7 +2,8 @@
 
 ## Benchmark Baseline
 - **Muon NS=5:** val_loss ≈ 1.515 (varies ±0.005 per run due to torch.compile)
-- **NEW Best:** 12v2 TD(λ=0.5) +temporal d=-1.0 → val_loss = 1.4993 (-0.018 vs Muon)
+- **NEW Best:** PerHeadBlendMuon QKV+outproj td d=-1.0 → val_loss = 1.4932 (-0.026 vs Muon)
+- **Previous best:** 12v2 TD(λ=0.5) +temporal d=-1.0 → val_loss = 1.4993 (-0.018 vs Muon)
 - **Previous best:** v5 save@2 b=0.15 → val_loss ≈ 1.508 (-0.007 to -0.011 vs Muon)
 
 ## Results Table
@@ -219,6 +220,22 @@
 62. **NS on embeddings hurts.** Embeddings are lookup tables, not linear transforms. Orthogonalizing their gradients doesn't have the same geometric meaning as weight matrices. The Muon+AdamW split is structurally correct.
 63. **Per-head orthogonalization gives -0.025 vs Muon (1 run).** Splitting QKV gradient into per-head slices (4 × 96×128) before NS respects multi-head structure. Different heads learn different features with different spectral profiles; mixing them in one NS forces suboptimal shared equalization. Head separation (4 slices) > Q/K/V separation (3 slices) > per-Q/K/V-per-head (12 slices, too fine).
 64. **Per-head is orthogonal to iterate blending.** Per-head changes WHAT gets orthogonalized. Blending changes HOW oscillation is managed. They should stack. Potential combined: -0.034 vs Muon.
+
+| **Series 16: Per-Head Replication + Blending Combo + Out_Proj Slicing (A100 GPU, batch=32, 2000 steps)** |||||
+| PerHead 4s (3 runs) | Per-head replication | 1.5011 mean | -0.019±0.003 | — | CONFIRMED (original -0.025 was lucky) |
+| PerHead 4s plain | PerHeadBlendMuon plain mode | 1.5037 | -0.022 | — | Consistent with replication |
+| PerHead 4s combined | Two-point + temporal on per-head | 1.5045 | -0.022 | — | FAILED (adds nothing to per-head) |
+| **PerHead 4s td d=-1.0** | **TD(λ) + d=-1.0 on per-head** | **1.4936** | **-0.032** | — | **NEW ALL-TIME BEST** |
+| PerHead QKV td | QKV-only td mode | 1.4988 | -0.021 | — | Baseline for outproj test |
+| **PerHead QKV+outproj td** | **+ out_proj col-sliced 4** | **1.4932** | **-0.026** | — | **Out_proj adds ~-0.005** |
+| Full wire td | + MLP sliced | 1.5017 | -0.018 | — | FAILED (MLP has no head structure) |
+
+65. **Per-head replication confirmed: -0.019 ± 0.003 vs Muon.** Three runs: -0.017, -0.019, -0.022. Original -0.025 was a lucky run but effect is robust. Notably, -0.019 almost exactly matches the blending recipe (-0.018) despite being a completely different mechanism.
+66. **Two-point iterate blending adds NOTHING to per-head.** Combined mode (two-point + temporal EMA) = -0.022 vs plain per-head = -0.022. Per-head slices (96×128) are closer to square → NS converges cleanly → no inter-iterate oscillation to cancel. Temporal EMA becomes pure lag.
+67. **TD(λ) + weak polynomial DOES stack with per-head: -0.032.** The weaker polynomial (d=-1.0) changes the convergence target, not just oscillation management. TD(λ) all-iterate averaging is gentler than two-point. New all-time best, nearly 2x the blending-only recipe.
+68. **Out_proj column slicing adds ~-0.005.** Transposing out_proj → splitting by head-output columns → NS each → recombine respects the head structure on the output side too. QKV+outproj td = 1.4932.
+69. **MLP slicing HURTS (+0.009).** MLP up/down weights have no head structure. Arbitrary slicing is like NS-on-embeddings: forcing structure that doesn't exist. Only slice where there IS structure.
+70. **The winning recipe: QKV per-head (4 slices) + out_proj col-sliced (4 slices) + TD(λ=0.5) + d=-1.0.** Three orthogonal axes: (1) structural slicing (what gets NS'd), (2) weaker polynomial (convergence target), (3) multi-iterate averaging (oscillation management). Cost: ~3.3x Muon.
 
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
