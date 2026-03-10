@@ -97,25 +97,22 @@ def polar_express_iteration(
     if transposed:
         X = X.T
 
-    # Pre-computed coefficients for 5 steps targeting c=0.88
-    # Step 1: SVs in [0, ~1.2] — need aggressive inflation of small SVs
-    # Step 2: SVs in [~0.3, ~1.1] — moderate correction
-    # Step 3: SVs in [~0.6, ~1.0] — fine tuning
-    # Step 4-5: SVs in [~0.75, ~0.95] — polishing
-    #
-    # These are computed from minimax optimization of p(σ) targeting c·sign(σ)
-    # on estimated spectral intervals after each step.
+    # Remez-optimal coefficients computed via differential_evolution
+    # targeting σ → 0.88·sign(σ) on progressively narrowing spectral intervals.
     # Polynomial form: X_{k+1} = a_t * X + (b_t * A + c_t * A²) @ X
     # where A = X @ X^T
     #
-    # Step 1: aggressive, wide interval — similar to standard NS but targeting 0.88
-    # We scale standard coefficients toward 0.88 target
+    # Step 1: [0.01, 1.0] → very aggressive inflation of small SVs
+    # Step 2: [0.06, 1.70] → moderate correction (overshoot from step 1)
+    # Step 3: [0.22, 1.54] → narrowing
+    # Step 4: [0.59, 1.17] → near target
+    # Step 5: [0.86, 0.90] → fine polishing to [0.88, 0.88]
     STEP_COEFFS = [
-        (3.4445, -4.7750, 2.0315),   # Step 1: standard NS (aggressive inflation)
-        (3.2000, -4.4000, 1.9000),   # Step 2: slightly gentler
-        (2.9000, -3.9000, 1.7500),   # Step 3: narrower interval
-        (2.6000, -3.4000, 1.5500),   # Step 4: near target
-        (2.3000, -2.9000, 1.3500),   # Step 5: fine polishing
+        (5.9581, -12.0000, 6.1038),  # Step 1: very aggressive
+        (3.7255, -3.5976, 0.9068),   # Step 2: moderate
+        (2.8001, -2.6982, 0.7756),   # Step 3: narrowing
+        (1.9995, -1.7850, 0.6478),   # Step 4: near target
+        (1.8756, -1.6150, 0.6254),   # Step 5: fine polishing
     ]
 
     iterates = []
