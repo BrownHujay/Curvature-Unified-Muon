@@ -235,9 +235,18 @@
 67. **TD(λ) + weak polynomial DOES stack with per-head: -0.032.** The weaker polynomial (d=-1.0) changes the convergence target, not just oscillation management. TD(λ) all-iterate averaging is gentler than two-point. New all-time best, nearly 2x the blending-only recipe.
 68. **Out_proj column slicing adds ~-0.005.** Transposing out_proj → splitting by head-output columns → NS each → recombine respects the head structure on the output side too. QKV+outproj td = 1.4932.
 69. **MLP slicing HURTS (+0.009).** MLP up/down weights have no head structure. Arbitrary slicing is like NS-on-embeddings: forcing structure that doesn't exist. Only slice where there IS structure.
-70. **The winning recipe: QKV per-head (4 slices) + out_proj col-sliced (4 slices) + TD(λ=0.5) + d=-1.0.** Three orthogonal axes: (1) structural slicing (what gets NS'd), (2) weaker polynomial (convergence target), (3) multi-iterate averaging (oscillation management). Cost: ~3.3x Muon.
+70. ~~**The winning recipe: QKV per-head (4 slices) + out_proj col-sliced (4 slices) + TD(λ=0.5) + d=-1.0.**~~ REVISED: out_proj is noise (16e), per-head doesn't scale (16f).
+
+| PerHead QKV td (3 runs) | TD replication | 1.4952 mean | -0.025±0.002 | — | CONFIRMED (16b's -0.032 was lucky) |
+| PerHead QKV+outproj plain | Structural isolation | 1.5025 | -0.012 | — | Out_proj adds NOTHING in plain mode |
+| PerHead 12s (124M, 10k steps) | 124M scale test | 3.7142 | -0.001 | — | **DOES NOT SCALE** |
+| PerHead 4s td (124M) | 124M fewer slices | 4.8291 | -0.006 | — | Marginal at best |
+| PerHead 3s td (124M) | 124M Q/K/V split | 4.8363 | +0.001 | — | Nothing |
+
+71. **TD mode confirmed at -0.025 ± 0.002.** 16b's -0.032 was a lucky run, just like 15b's -0.025 for plain. TD adds ~-0.006 over plain per-head, consistent with d=-1.0's contribution in blending-only research.
+72. **Out_proj col-slicing is noise.** 16e showed zero benefit in plain mode. The 128×128 out_proj is already square — slicing makes it MORE rectangular. 16c's -0.005 was a lucky run.
+73. **PER-HEAD DOES NOT SCALE TO 124M.** 12 slices = 0 improvement. 4 slices = -0.006. 3 slices = 0. Root cause: per-head ratio = 3/n_heads. 4 heads → 0.75:1 (near square). 12 heads → 0.25:1 (very rectangular). The 1.2M improvement was aspect-ratio dependent, not fundamental.
+74. **NS optimization is FULLY EXHAUSTED.** 16 series, 85+ experiments. Every polynomial, blending, structural, and alternative approach tested. The TD(λ) blending recipe (-0.018 at 1.2M, -0.014 at 124M) is the ceiling.
 
 ## Untested Ideas
-- **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
-- **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming
-- v6 (Adaptive Spectral Blend) — per-layer adaptive blend via spectral divergence
+None within NS/Muon framework. Research complete.
