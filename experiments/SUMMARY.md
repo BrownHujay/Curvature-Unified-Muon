@@ -191,6 +191,18 @@
 55. **The bifurcation family constraint is structural, not arbitrary.** Polynomials parameterized by p'(σ*) with fixed point at σ*=0.868 are FORCED to have large enough coefficients (a≥~3.0 for useful d range). Unconstrained optimization finds "gentle" polynomials that equalize by being weak, not by being aggressive-then-canceling. The constraint preserves the property that matters most.
 56. **Dose-response: a=2.0 (+0.045), a=2.23 (+0.020), a=2.68 (+0.017 vs combined), a=3.15 (-0.018 vs Muon).** Clear monotonic relationship between linear coefficient magnitude and performance. No sweet spot at intermediate values.
 
+| **Series 14: Deep Research V4 Mathematical Frameworks (A100 GPU, batch=32, 2000 steps)** |||||
+| 14v1 | Ruiz5+NS3 basic | 1.5388 | +0.017 | — | FAILED (NS robust to input preprocessing) |
+| 14v1 | Ruiz5+NS5 basic | 1.5246 | +0.003 | — | FAILED (Ruiz adds cost, no benefit) |
+| 14v1 | Frame η=2.5 7step | 2.1400 | +0.618 | — | FAILED (catastrophic — Paradigm A dead) |
+| 14v1 | Polar Express 5step (hand-tuned) | 1.5396 | +0.018 | — | FAILED (coefficients too gentle) |
+| 14v1 | Ruiz5+NS3 combined | 1.5320 | +0.010 | — | FAILED |
+| 14v1 | Ruiz5+NS5 combined | 1.5130 | -0.009 | — | FAILED (worse than combined alone) |
+
+57. **Ruiz pre-conditioning is irrelevant to NS.** Diagonal row/col scaling before NS doesn't help — NS is robust to input preprocessing (reconfirms learning 14). Adding Ruiz just increases cost.
+58. **Frame potential gradient flow is catastrophic in practice.** The cubic iteration σ→σ(1−η(σ²−c²)) with aggressive η is unstable with real gradients (+0.62 vs Muon). Six mathematical fields converging to the same iteration doesn't make it practically useful. Proves direct spectral targeting (Paradigm A) is dead.
+59. **Hand-tuned step-adaptive coefficients fail when they're too gentle.** Polar Express with progressively gentler coefficients (a: 3.44→2.30) hit the coefficient magnitude issue from Series 13. Later steps need less correction but early steps need MORE aggression, not less.
+
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
 - **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming
