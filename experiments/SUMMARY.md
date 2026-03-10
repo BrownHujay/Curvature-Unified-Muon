@@ -203,6 +203,23 @@
 58. **Frame potential gradient flow is catastrophic in practice.** The cubic iteration σ→σ(1−η(σ²−c²)) with aggressive η is unstable with real gradients (+0.62 vs Muon). Six mathematical fields converging to the same iteration doesn't make it practically useful. Proves direct spectral targeting (Paradigm A) is dead.
 59. **Hand-tuned step-adaptive coefficients fail when they're too gentle.** Polar Express with progressively gentler coefficients (a: 3.44→2.30) hit the coefficient magnitude issue from Series 13. Later steps need less correction but early steps need MORE aggression, not less.
 
+| 14v1 | Polar Remez 5step | 1.5229 | +0.007 | — | FAILED (Remez-optimal still loses to NS) |
+| 14v1 | Polar Remez 3step | 1.5409 | +0.025 | — | FAILED |
+
+60. **Remez-optimal step-adaptive coefficients still lose.** Even with minimax-optimal polynomials computed via differential_evolution for each step's spectral interval, Polar Express (+0.007 vs Muon) can't beat NS's fixed quintic. The cursed quintic's specific oscillation dynamics are uniquely effective.
+61. **Every alternative polynomial/iteration across 14 series has failed.** Frame potential, Ruiz, Polar Express (hand-tuned and Remez), minimax, minvar, L2, stable-0.88, Chebyshev sign — none beat standard NS. The cursed quintic is load-bearing.
+
+| **Series 15: Universal Muon / Per-Head Orthogonalization (A100 GPU, batch=32, 2000 steps)** |||||
+| Universal all s1d=0.015 | NS all 2D + norm 1D | 1.5280 | +0.007 | — | FAILED (NS on embeddings hurts) |
+| Universal 2D + AdamW 1D | NS all 2D, AdamW 1D | 1.5288 | +0.007 | — | FAILED (confirms embeddings need Adam) |
+| **PerHead 4 slices** | **Per-head QKV orthogonalization** | **1.4991** | **-0.025** | — | **NEW RECORD? Needs replication** |
+| PerHead 3 slices | Per-Q/K/V orthogonalization | 1.5067 | -0.018 | — | Strong (matches blending recipe) |
+| PerHead 12 slices | Per-Q/K/V/head orthogonalization | 1.5077 | -0.017 | — | Too fine-grained |
+
+62. **NS on embeddings hurts.** Embeddings are lookup tables, not linear transforms. Orthogonalizing their gradients doesn't have the same geometric meaning as weight matrices. The Muon+AdamW split is structurally correct.
+63. **Per-head orthogonalization gives -0.025 vs Muon (1 run).** Splitting QKV gradient into per-head slices (4 × 96×128) before NS respects multi-head structure. Different heads learn different features with different spectral profiles; mixing them in one NS forces suboptimal shared equalization. Head separation (4 slices) > Q/K/V separation (3 slices) > per-Q/K/V-per-head (12 slices, too fine).
+64. **Per-head is orthogonal to iterate blending.** Per-head changes WHAT gets orthogonalized. Blending changes HOW oscillation is managed. They should stack. Potential combined: -0.034 vs Muon.
+
 ## Untested Ideas
 - **CANS convergent coefficients** — polynomial coefficients that sum to 1.0 and actually converge, but targeting ~0.88 instead of 1.0
 - **SDP-optimized polynomial** — sample gradient SV distributions, solve for coefficients minimizing training loss directly via semidefinite programming

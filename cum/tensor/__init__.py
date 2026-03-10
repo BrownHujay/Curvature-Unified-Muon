@@ -3,5 +3,6 @@
 
 from .universal_muon import UniversalMuon
 from .per_head_muon import PerHeadMuon
+from .per_head_blend_muon import PerHeadBlendMuon
 
-__all__ = ["UniversalMuon", "PerHeadMuon"]
+__all__ = ["UniversalMuon", "PerHeadMuon", "PerHeadBlendMuon"]
